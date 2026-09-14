@@ -82,7 +82,7 @@ void fetchHomeAssistantTemperature() {
     attrs["ha_network_probe"]    = String(networkTempC, 1);
     attrs["blended_average"]     = String(blendedAverageC, 1);
     
-for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 4; i++) {
         String rpmKey = "fan" + String(i + 1) + "_rpm";
         String faultKey = "fan" + String(i + 1) + "_fault";
         if (i < config.fanCount) {
@@ -93,7 +93,7 @@ for (int i = 0; i < 4; i++) {
             attrs[rpmKey] = 0;
             attrs[faultKey] = false; 
         }
-    }
+      }
 
     String jsonPayload;
     serializeJson(outboundDoc, jsonPayload);

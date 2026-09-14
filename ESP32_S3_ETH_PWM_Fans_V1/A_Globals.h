@@ -33,8 +33,8 @@ const int tachPins[NUM_FANS] = {2, 40, 17, 7};
 #define TFT_DC       43  
 #define CS_MAIN      44  
 #define TFT_RST      45  
-#define CS_LEFT      47  
-#define CS_RIGHT     48  
+// #define CS_LEFT      47  
+// #define CS_RIGHT     48  
 #define DISP_SCK      39  
 #define DISP_MOSI     41  
 
