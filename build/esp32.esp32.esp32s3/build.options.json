@@ -1,0 +1,10 @@
+{
+  "additionalFiles": "..\\..\\..,..\\..\\..\\..\\..,..\\..\\..\\..\\..,..\\..\\..,..\\..\\..,..\\..",
+  "builtInLibrariesFolders": "C:\\Users\\Brad\\AppData\\Local\\Arduino15\\libraries",
+  "compiler.optimization_flags": "-Os",
+  "customBuildProperties": "",
+  "fqbn": "esp32:esp32:esp32s3:UploadSpeed=921600,USBMode=hwcdc,CDCOnBoot=cdc,MSCOnBoot=default,DFUOnBoot=default,UploadMode=default,CPUFreq=240,FlashMode=qio,FlashSize=16M,PartitionScheme=huge_app,DebugLevel=none,PSRAM=opi,LoopCore=1,EventsCore=1,EraseFlash=all,JTAGAdapter=default,ZigbeeMode=default",
+  "hardwareFolders": "C:\\Users\\Brad\\AppData\\Local\\arduino15\\packages\\esp32\\hardware\\esp32\\3.3.11,C:\\Users\\Brad\\AppData\\Local\\arduino15\\packages\\esp32\\hardware\\esp32\\3.3.11",
+  "otherLibrariesFolders": "c:\\Users\\Brad\\Documents\\Arduino\\libraries",
+  "sketchLocation": "C:\\Users\\Brad\\Documents\\Arduino\\ESP32_S3_ETH_PWM_Fans_VER_1.0_WORKING_NO_LCD_202609121945"
+}
