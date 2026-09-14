@@ -1,6 +1,33 @@
 #ifndef A_GLOBALS_H
 #define A_GLOBALS_H
 
+// --- Waveshare ESP32-S3-ETH PCB Internal Hardware Map ---
+#define SD_CS         4
+#define SD_MISO       5
+#define SD_MOSI       6
+#define SD_CLK        7
+#define ETH_RST       9
+#define ETH_INT      10  
+#define W5500_MOSI   11  
+#define W5500_MISO   12  
+#define W5500_SCK    13  
+#define CS_ETH       14  
+
+// --- Triple LCD Chip Mapping ---
+#define TFT_BL       42
+#define TFT_DC       43
+#define CS_MAIN      44
+#define TFT_RST      45
+#define DISP_SCK     39
+#define DISP_MOSI    41
+
+// --- Fan & Sensor Pins ---
+#define ONE_WIRE_BUS 21
+
+const int NUM_FANS = 4; 
+const int pwmPins[NUM_FANS]  = {1, 18, 8, 4};     
+const int tachPins[NUM_FANS] = {2, 40, 17, 7}; 
+
 // --- Configuration Constants ---
 const uint32_t PWM_FREQ = 25000;
 const int PWM_RES_BITS = 8;
@@ -10,33 +37,6 @@ const unsigned long REFRESH_PERIOD = 2000;
 #define ST77XX_DARKGRAY 0x7BEF 
 #endif
 
-// --- Waveshare ESP32-S3-ETH PCB Internal Hardware Map ---
-#define SD_CS       4   
-#define SD_MISO     5   
-#define SD_MOSI     6   
-#define SD_CLK      7   
-#define ETH_RST      9   
-#define ETH_INT      10  
-#define W5500_MOSI   11  
-#define W5500_MISO   12  
-#define W5500_SCK    13  
-#define CS_ETH       14  
-
-// --- Fan & Sensor Pins ---
-#define ONE_WIRE_BUS 21
-const int NUM_FANS = 4; 
-const int pwmPins[NUM_FANS]  = {1, 18, 8, 4};     
-const int tachPins[NUM_FANS] = {2, 40, 17, 7}; 
-
-// --- Triple LCD Chip Mapping ---
-#define TFT_BL       42  
-#define TFT_DC       43  
-#define CS_MAIN      44  
-#define TFT_RST      45  
-// #define CS_LEFT      47  
-// #define CS_RIGHT     48  
-#define DISP_SCK      39  
-#define DISP_MOSI     41  
 
 // --- System Configuration Template ---
 struct SystemConfig {

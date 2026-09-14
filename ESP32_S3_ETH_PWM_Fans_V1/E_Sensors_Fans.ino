@@ -54,7 +54,6 @@ void runTachometerCalculationBucket() {
   }
 }
 
-// Drop your calculateFanCurve() and evaluateSensorFailsafes() right here!
 
 // --- Failsafe Sensor Arbitration Logic ---
 void evaluateSensorFailsafes() {
@@ -92,7 +91,6 @@ void evaluateSensorFailsafes() {
     }
 }
 
-
 // --- Fan Control Automation Core ---
 void calculateFanCurve(float targetTemp) {
     int targetDuty = 0;
@@ -123,7 +121,6 @@ void calculateFanCurve(float targetTemp) {
         }
     }
 }
-
 
 
 void parseIpString(String ipStr, IPAddress &ip) {
