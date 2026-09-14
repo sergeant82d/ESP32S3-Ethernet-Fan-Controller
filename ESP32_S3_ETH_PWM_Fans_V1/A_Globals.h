@@ -60,6 +60,10 @@ struct SystemConfig {
 // Global config instance declaration
 extern SystemConfig config;
 
+// User-configurable Minimum Fan PWM Duty Cycle (8-bit scale: 0 - 255)
+// Noctua NF-A12x25 PWM can reliably spin down to ~10-15% (duty 25 - 38)
+#define FAN_MIN_DUTY 30
+
 // --- Global Telemetry Variables ---
 extern byte mac[];
 extern volatile unsigned long tachCounts[NUM_FANS];

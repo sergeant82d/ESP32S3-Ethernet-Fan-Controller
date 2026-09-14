@@ -43,7 +43,7 @@ unsigned int localPortUDP = 8888;
 
 volatile unsigned long tachCounts[NUM_FANS] = {0, 0, 0, 0};
 unsigned long currentRPMs[NUM_FANS] = {0, 0, 0, 0};
-int currentDutyCycles[NUM_FANS] = {51, 51, 51, 51};
+int currentDutyCycles[NUM_FANS] = {FAN_MIN_DUTY, FAN_MIN_DUTY, FAN_MIN_DUTY, FAN_MIN_DUTY};
 
 float localTempC = 0.0;
 float networkTempC = 0.0;

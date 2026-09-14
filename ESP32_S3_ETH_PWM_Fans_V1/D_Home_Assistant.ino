@@ -82,12 +82,13 @@ void fetchHomeAssistantTemperature() {
     attrs["ha_network_probe"]    = String(networkTempC, 1);
     attrs["blended_average"]     = String(blendedAverageC, 1);
     
-    for (int i = 0; i < 4; i++) {
+for (int i = 0; i < 4; i++) {
         String rpmKey = "fan" + String(i + 1) + "_rpm";
         String faultKey = "fan" + String(i + 1) + "_fault";
         if (i < config.fanCount) {
             attrs[rpmKey] = currentRPMs[i];
-            attrs[faultKey] = (currentDutyCycles[i] > 51 && currentRPMs[i] == 0);
+            // Flag stall fault if commanded above minimum floor but RPM reads zero
+            attrs[faultKey] = (currentDutyCycles[i] >= FAN_MIN_DUTY && currentRPMs[i] == 0);
         } else {
             attrs[rpmKey] = 0;
             attrs[faultKey] = false; 

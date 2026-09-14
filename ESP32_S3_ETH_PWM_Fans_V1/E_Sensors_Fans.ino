@@ -97,7 +97,7 @@ void evaluateSensorFailsafes() {
 void calculateFanCurve(float targetTemp) {
     int targetDuty = 0;
     
-    // 🌟 FIXED: Shield constraint completely prevents divide-by-zero if limits are identical or uninitialized
+    // Shield constraint completely prevents divide-by-zero if limits are identical or uninitialized
     if (config.tMax <= config.tMin) {
         targetDuty = 255; // Secure safety override to full power if thresholds are corrupt
     } else {
@@ -106,7 +106,9 @@ void calculateFanCurve(float targetTemp) {
         } else if (targetTemp >= config.tMax) {
             targetDuty = 255; 
         } else {
-            targetDuty = (int)(51.0 + ((targetTemp - config.tMin) / (config.tMax - config.tMin)) * 204.0);
+            // Dynamically scale from FAN_MIN_DUTY to 255
+            float rangeFraction = (targetTemp - config.tMin) / (config.tMax - config.tMin);
+            targetDuty = (int)(FAN_MIN_DUTY + (rangeFraction * (255.0f - (float)FAN_MIN_DUTY)));
         }
     }
 
