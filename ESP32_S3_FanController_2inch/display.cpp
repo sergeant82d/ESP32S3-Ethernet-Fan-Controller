@@ -4,6 +4,7 @@
 #include "sensors.h"
 #include "touch.h"
 #include "home_assistant.h"
+#include "sd_logger.h"
 #include <Adafruit_GFX.h>
 #include <Adafruit_ST7789.h>
 #include <SPI.h>
@@ -499,9 +500,14 @@ void handleTouchInput() {
                     manualOverrideActive = false; // revert to auto
                     overlayOpen = false;
                     pushOverrideToHA();
+                    Serial.println("Override DEACTIVATED via LCD (Cancel)");
+                    sdLogEvent("OVERRIDE", "source=LCD action=OFF (cancel)");
                 } else if (pointInRect(tx, ty, OVERLAY_KEEPON_X, OVERLAY_BTN_Y, OVERLAY_BTN_W, OVERLAY_BTN_H)) {
                     overlayOpen = false; // stays active; button keeps flashing (see refreshBarsOnly())
                     pushOverrideToHA(); // pushes the final slider value HA hasn't seen yet
+                    int pct = (manualOverrideDutyCycle * 100) / 255;
+                    Serial.print("Override kept ON via LCD - speed="); Serial.print(pct); Serial.println("%");
+                    sdLogEvent("OVERRIDE", "source=LCD action=SPEED (keep-on) speed=" + String(pct) + "%");
                 }
             }
         }
@@ -516,9 +522,13 @@ void handleTouchInput() {
                     overlayOpen = true;
                     drawOverrideOverlay();
                     pushOverrideToHA();
+                    Serial.println("Override ACTIVATED via LCD - speed=100%");
+                    sdLogEvent("OVERRIDE", "source=LCD action=ON speed=100%");
                 } else {
                     manualOverrideActive = false; // tap while flashing turns override off directly
                     pushOverrideToHA();
+                    Serial.println("Override DEACTIVATED via LCD (tap while flashing)");
+                    sdLogEvent("OVERRIDE", "source=LCD action=OFF (tap-while-flashing)");
                 }
             }
         }

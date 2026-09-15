@@ -2,6 +2,7 @@
 #include "config.h"
 #include "sensors.h"
 #include "home_assistant.h"
+#include "sd_logger.h"
 #include <TimeLib.h>
 #include <LittleFS.h>
 
@@ -85,6 +86,7 @@ void handleNativeWebTraffic(EthernetClient& client) {
     // override always starts false on every boot regardless of source.
     if (req.indexOf("GET /override_set") != -1) {
         bool wasActive = manualOverrideActive;
+        int wasDuty = manualOverrideDutyCycle;
 
         String activeParam = getUrlParam(req, "active=");
         String speedParam  = getUrlParam(req, "speed=");
@@ -106,8 +108,16 @@ void handleNativeWebTraffic(EthernetClient& client) {
         }
 
         pushOverrideToHA(); // keep HA in sync regardless of which surface changed it
-        (void)wasActive;    // reserved for the future SD-log event (see TODO below)
-        // TODO: once SD logging lands, record (timestamp, ON/OFF or speed change, source=web)
+
+        int pct = (manualOverrideDutyCycle * 100) / 255;
+        if (manualOverrideActive != wasActive) {
+            Serial.print("Override "); Serial.print(manualOverrideActive ? "ACTIVATED" : "DEACTIVATED");
+            Serial.print(" via web - speed="); Serial.print(pct); Serial.println("%");
+            sdLogEvent("OVERRIDE", String("source=web action=") + (manualOverrideActive ? "ON" : "OFF") + " speed=" + String(pct) + "%");
+        } else if (manualOverrideDutyCycle != wasDuty) {
+            Serial.print("Override SPEED changed via web: "); Serial.print(pct); Serial.println("%");
+            sdLogEvent("OVERRIDE", "source=web action=SPEED speed=" + String(pct) + "%");
+        }
 
         client.println("HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nConnection: close\r\n");
         client.println("{\"ok\":true}");

@@ -1,6 +1,7 @@
 #include "home_assistant.h"
 #include "config.h"
 #include "sensors.h"
+#include "sd_logger.h"
 #include <Ethernet.h>
 #include <ArduinoJson.h>
 #include <math.h>
@@ -343,19 +344,30 @@ void fetchOverrideFromHA() {
         if (haOn) {
             manualOverrideDutyCycle = gotSpeed ? constrain((int)haSpeed, 0, 255) : 255; // default full speed
         }
-        Serial.print("Override changed via HA: "); Serial.println(haOn ? "ON" : "OFF");
-        // TODO: once SD logging lands, record (timestamp, ON/OFF, speed, source=HA)
+        int pct = (manualOverrideDutyCycle * 100) / 255;
+        Serial.print("Override "); Serial.print(haOn ? "ACTIVATED" : "DEACTIVATED");
+        Serial.print(" via HA - speed="); Serial.print(pct); Serial.println("%");
+        sdLogEvent("OVERRIDE", String("source=HA action=") + (haOn ? "ON" : "OFF") + " speed=" + String(pct) + "%");
     } else if (haOn && gotSpeed) {
         // Already active - pick up a speed change made via HA's own slider
         int newDuty = constrain((int)haSpeed, 0, 255);
         if (abs(newDuty - manualOverrideDutyCycle) > 2) { // ignore float noise
             manualOverrideDutyCycle = newDuty;
-            Serial.print("Override speed changed via HA: "); Serial.println(newDuty);
+            int pct = (manualOverrideDutyCycle * 100) / 255;
+            Serial.print("Override SPEED changed via HA: "); Serial.print(pct); Serial.println("%");
+            sdLogEvent("OVERRIDE", "source=HA action=SPEED speed=" + String(pct) + "%");
         }
     }
 }
 
 void pushOverrideToHA() {
-    if (strlen(config.haOverrideSwitchEntity) > 0) pushEntityBoolState(config.haOverrideSwitchEntity, manualOverrideActive);
+    // Order matters: the speed value must land in HA *before* the switch
+    // state does. HA's "push switch to device" automation fires the
+    // instant the switch changes and reads whatever's currently in the
+    // speed helper - if the switch update goes first, that automation can
+    // read the *old* speed value and bounce it straight back to the
+    // device, overwriting the fresh value moments after we set it. This
+    // was the actual cause of the "speed reverts on re-engage" bug.
     if (strlen(config.haOverrideSpeedEntity) > 0) pushEntityFloatState(config.haOverrideSpeedEntity, manualOverrideDutyCycle);
+    if (strlen(config.haOverrideSwitchEntity) > 0) pushEntityBoolState(config.haOverrideSwitchEntity, manualOverrideActive);
 }
