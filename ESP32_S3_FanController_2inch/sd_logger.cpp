@@ -3,6 +3,7 @@
 #include "config.h"
 #include "sensors.h"
 #include "display.h"
+#include "home_assistant.h"
 #include <SD.h>
 #include <LittleFS.h>
 #include <TimeLib.h>
@@ -90,7 +91,21 @@ static bool sdHasFreeSpace() {
     return (total - used) > MIN_FREE_BYTES;
 }
 
+static bool littleFsUnavailableWarned = false;
+
 static void appendToSpillover(const String &line) {
+    if (!isLittleFsMounted()) {
+        // LittleFS never mounted successfully - do NOT touch it. Calling
+        // filesystem operations against an unmounted LittleFS is a known
+        // way for ESP32's VFS layer to hang indefinitely rather than fail
+        // cleanly, which is exactly what this guard exists to prevent.
+        if (!littleFsUnavailableWarned) {
+            Serial.println("WARNING: LittleFS not mounted - SD-absent spillover is unavailable. This log row is being dropped.");
+            littleFsUnavailableWarned = true;
+        }
+        return;
+    }
+
     File f = LittleFS.open(SPILLOVER_PATH, FILE_APPEND);
     if (!f) {
         f = LittleFS.open(SPILLOVER_PATH, FILE_WRITE);
@@ -132,7 +147,20 @@ void sdLogEvent(const String &category, const String &description) {
     appendLine("/events.csv", line);
 }
 
+bool isSdCardPresent() { return sdPresent; }
+
+bool isSpilloverNearFull() {
+    if (!isLittleFsMounted()) return false; // nothing to check if it's not even mounted
+    if (!LittleFS.exists(SPILLOVER_PATH)) return false;
+    File f = LittleFS.open(SPILLOVER_PATH, FILE_READ);
+    if (!f) return false;
+    size_t sz = f.size();
+    f.close();
+    return sz > (SPILLOVER_MAX_BYTES * 4 / 5); // >80% of cap
+}
+
 static void drainSpilloverToSD() {
+    if (!isLittleFsMounted()) return; // nothing to drain from an unmounted filesystem
     if (!LittleFS.exists(SPILLOVER_PATH)) return;
     File f = LittleFS.open(SPILLOVER_PATH, FILE_READ);
     if (!f) return;
@@ -332,6 +360,16 @@ static void finalizeDailyRollup() {
     appendLine("/rollups/daily.csv", row);
     updateAllTimeRecord(today);
     purgeOldDailyRows();
+
+    // Once-a-day push of just the hi/lo summary to HA - separate from the
+    // continuous 2s live telemetry push, and NOT the full raw log (that
+    // stays local to the SD card per the original spec).
+    pushDailyRollupToHA(rollupDate,
+                        today.localMin, today.localMax,
+                        today.netMin, today.netMax,
+                        today.blendMin, today.blendMax,
+                        today.fan1Min, today.fan1Max,
+                        today.fan2Min, today.fan2Max);
 }
 
 // ============================================================

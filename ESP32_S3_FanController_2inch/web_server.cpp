@@ -5,6 +5,7 @@
 #include "sd_logger.h"
 #include <TimeLib.h>
 #include <LittleFS.h>
+#include <math.h>
 
 static String getUrlParam(String src, String param) {
     int idx = src.indexOf(param);
@@ -66,6 +67,7 @@ void handleNativeWebTraffic(EthernetClient& client) {
         json += "\"blend_temp\":\"" + blendedStr + "\",";
         json += "\"override_active\":" + String(manualOverrideActive ? "true" : "false") + ",";
         json += "\"override_speed\":" + String(manualOverrideDutyCycle) + ",";
+        json += "\"sd_present\":" + String(isSdCardPresent() ? "true" : "false") + ",";
         json += "\"fans\":[";
         for (int i = 0; i < 4; i++) {
             json += String(currentRPMs[i]);
@@ -96,18 +98,29 @@ void handleNativeWebTraffic(EthernetClient& client) {
         // "active=0" with nothing after it), getUrlParam() grabs everything
         // to the end of the raw request line, including trailing " HTTP/1.1" -
         // exact equality against "0" then silently fails.
+        bool switchChanged = false;
+        bool speedOnlyChanged = false;
+
         if (activeParam.length() > 0 && activeParam.charAt(0) == '1') {
             manualOverrideActive = true;
             manualOverrideDutyCycle = speedParam.length() > 0 ? constrain(speedParam.toInt(), 0, 255) : 255;
+            switchChanged = true;
         } else if (activeParam.length() > 0 && activeParam.charAt(0) == '0') {
             manualOverrideActive = false;
+            switchChanged = true;
         } else if (manualOverrideActive && speedParam.length() > 0) {
             // Active and only the slider moved - adjust speed without
             // touching the on/off state.
             manualOverrideDutyCycle = constrain(speedParam.toInt(), 0, 255);
+            speedOnlyChanged = true;
         }
 
-        pushOverrideToHA(); // keep HA in sync regardless of which surface changed it
+        // Switch-only on engage/disengage, speed-only on a genuine slider
+        // move - never both together. See home_assistant.h for why: pushing
+        // both let HA's own automations bounce a stale speed value back on
+        // every switch change, since HA processes the two asynchronously.
+        if (switchChanged) pushOverrideSwitchToHA();
+        else if (speedOnlyChanged) pushOverrideSpeedToHA();
 
         int pct = (manualOverrideDutyCycle * 100) / 255;
         if (manualOverrideActive != wasActive) {
@@ -150,6 +163,9 @@ void handleNativeWebTraffic(EthernetClient& client) {
         String tminStr = getUrlParam(body, "tmin=");
         String tmaxStr = getUrlParam(body, "tmax=");
         if (tminStr.length() > 0 && tmaxStr.length() > 0) {
+            float oldTMin = config.tMin;
+            float oldTMax = config.tMax;
+
             float parsedMin = tminStr.toFloat();
             float parsedMax = tmaxStr.toFloat();
             if (submittedAsFahrenheit) {
@@ -159,6 +175,18 @@ void handleNativeWebTraffic(EthernetClient& client) {
                 config.tMin = parsedMin;
                 config.tMax = parsedMax;
             }
+
+            // Log the change (values always stored/logged in Celsius,
+            // matching internal representation - ignore float noise with
+            // a small tolerance so re-submitting the same form doesn't
+            // spam identical-looking rows).
+            if (fabs(config.tMin - oldTMin) > 0.05) {
+                sdLogEvent("CONFIG", "source=web field=tMin old=" + String(oldTMin, 1) + "C new=" + String(config.tMin, 1) + "C");
+            }
+            if (fabs(config.tMax - oldTMax) > 0.05) {
+                sdLogEvent("CONFIG", "source=web field=tMax old=" + String(oldTMax, 1) + "C new=" + String(config.tMax, 1) + "C");
+            }
+
             // Push immediately so HA's own stored value matches - otherwise
             // the next periodic poll (home_assistant.cpp: fetchThresholdsFromHA(),
             // every 15s) would see HA's stale value and silently revert
@@ -302,6 +330,7 @@ void handleNativeWebTraffic(EthernetClient& client) {
     client.println("    document.getElementById(\"liveNetText\").innerText = data.net_temp;");
     client.println("    document.getElementById(\"liveBlendText\").innerText = data.blend_temp;");
     client.println("    updateOverrideUI(data.override_active, data.override_speed);");
+    client.println("    updateSdStatus(data.sd_present);");
     client.println("    data.fans.forEach((rpm, index) => {");
     client.println("      let fanEl = document.getElementById(\"fanRpm_\" + index);");
     client.println("      if(fanEl) fanEl.innerText = rpm + \" RPM\";");
@@ -310,8 +339,8 @@ void handleNativeWebTraffic(EthernetClient& client) {
     client.println("}");
 
     // Manual override controls - mirrors the LCD touch UI / HA switch;
-    // whichever surface changes it, pushOverrideToHA() on the firmware side
-    // keeps the others in sync via the next poll.
+    // whichever surface changes it, the firmware's granular push functions
+    // (pushOverrideSwitchToHA/pushOverrideSpeedToHA) keep the others in sync.
     client.println("let overrideDragging = false;");
 
     client.println("function updateOverrideUI(active, speed) {");
@@ -326,6 +355,13 @@ void handleNativeWebTraffic(EthernetClient& client) {
     client.println("    slider.value = speed;");
     client.println("    document.getElementById('overrideSpeedLabel').innerText = Math.round(speed / 255 * 100) + '%';");
     client.println("  }");
+    client.println("}");
+
+    client.println("function updateSdStatus(present) {");
+    client.println("  const el = document.getElementById('sdStatusText');");
+    client.println("  if (!el) return;");
+    client.println("  el.innerText = present ? 'OK' : 'Not present (buffering internally)';");
+    client.println("  el.style.color = present ? '#28a745' : '#dc3545';");
     client.println("}");
 
     client.println("function toggleOverride() {");
@@ -372,6 +408,18 @@ void handleNativeWebTraffic(EthernetClient& client) {
         client.println("' oninput='onOverrideSliderInput(this.value)' onchange='onOverrideSliderChange(this.value)'>");
         client.println("</div>");
         client.println("</div>");
+    }
+
+    // SD card status - server-rendered with the true current state so a
+    // fresh page load shows the right thing before the first poll.
+    {
+        bool sdOk = isSdCardPresent();
+        client.print("<div class='card-large' style='text-align:center;'>&#128190; <strong>SD Card:</strong> ");
+        client.print("<span id='sdStatusText' style='font-weight:bold; color:");
+        client.print(sdOk ? "#28a745" : "#dc3545");
+        client.print(";'>");
+        client.print(sdOk ? "OK" : "Not present (buffering internally)");
+        client.println("</span></div>");
     }
 
     client.println("<div class='grid'>");
@@ -431,6 +479,14 @@ void handleNativeWebTraffic(EthernetClient& client) {
     client.println("<hr><div style='background:#edf1f5; padding:15px; border-radius:4px; margin:20px 0; font-size:12px; color:#555;'>");
     client.println("<label style='font-weight:bold; display:block; margin-bottom:5px; color:#333;'>Firmware Build Info</label>");
     client.print("<strong>Source File:</strong> "); client.print(SKETCH_FILENAME); client.println("<br>");
+    // NOTE: __DATE__/__TIME__ are baked in whenever THIS file is actually
+    // compiled, not whenever you upload - Arduino's incremental build
+    // reuses this file's object file unchanged if this file itself hasn't
+    // been edited, even while other files (and the overall binary) get
+    // freshly rebuilt and flashed. If this timestamp looks stuck across
+    // several uploads, that's why - it means only other files changed in
+    // that stretch. This comment line is itself a trivial edit to force a
+    // fresh recompile right now.
     client.print("<strong>Build Date:</strong> ");  client.print(__DATE__); client.println("<br>");
     client.print("<strong>Build Time:</strong> ");  client.print(__TIME__); client.println("");
     client.println("</div>");

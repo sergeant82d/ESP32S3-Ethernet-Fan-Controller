@@ -99,3 +99,14 @@ void networkInit() {
     Serial.print("Dashboard URL: http://"); Serial.println(Ethernet.localIP());
     Serial.print("Hardware status: ");       Serial.println((int)Ethernet.hardwareStatus());
 }
+
+bool isEthernetConnected() {
+    return Ethernet.linkStatus() == LinkON;
+}
+
+bool isNetworkConnected() {
+    // Wi-Fi fallback (bookmark #5) isn't built yet - this is the single
+    // call site that should become `isEthernetConnected() || isWifiConnected()`
+    // once it is, rather than every caller needing to know about both paths.
+    return isEthernetConnected();
+}

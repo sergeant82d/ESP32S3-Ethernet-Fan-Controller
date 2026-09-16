@@ -65,8 +65,16 @@ void setup() {
         Serial.println("Critical error: LittleFS mount/format failed.");
     }
 
-    displayInit();
+    // networkInit() must come before displayInit(): drawTitleBar() (called
+    // once inside displayInit() for the initial frame) now queries
+    // Ethernet.linkStatus() for the network status dot. Querying it before
+    // Ethernet.begin()/init() have actually run is an out-of-order SPI
+    // transaction to a chip that isn't set up yet, and was observed to
+    // corrupt the real initialization moments later - hardwareStatus()
+    // came back 0 (no W5500 detected at all) and the IP stuck at
+    // 255.255.255.255, even though the wiring/hardware was fine.
     networkInit();
+    displayInit();
     sensorsInit();
 #if TOUCH_ENABLED
     touchInit();

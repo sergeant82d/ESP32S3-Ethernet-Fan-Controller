@@ -251,13 +251,14 @@ void fetchThresholdsFromHA() {
     if (gotMin && fabs(haTMin - config.tMin) > EPSILON) {
         Serial.print("tMin changed via HA: "); Serial.print(config.tMin);
         Serial.print(" -> "); Serial.println(haTMin);
+        sdLogEvent("CONFIG", "source=HA field=tMin old=" + String(config.tMin, 1) + "C new=" + String(haTMin, 1) + "C");
         config.tMin = haTMin;
         changed = true;
-        // TODO: once SD logging lands, record (timestamp, old, new, source=HA)
     }
     if (gotMax && fabs(haTMax - config.tMax) > EPSILON) {
         Serial.print("tMax changed via HA: "); Serial.print(config.tMax);
         Serial.print(" -> "); Serial.println(haTMax);
+        sdLogEvent("CONFIG", "source=HA field=tMax old=" + String(config.tMax, 1) + "C new=" + String(haTMax, 1) + "C");
         config.tMax = haTMax;
         changed = true;
     }
@@ -360,14 +361,56 @@ void fetchOverrideFromHA() {
     }
 }
 
-void pushOverrideToHA() {
-    // Order matters: the speed value must land in HA *before* the switch
-    // state does. HA's "push switch to device" automation fires the
-    // instant the switch changes and reads whatever's currently in the
-    // speed helper - if the switch update goes first, that automation can
-    // read the *old* speed value and bounce it straight back to the
-    // device, overwriting the fresh value moments after we set it. This
-    // was the actual cause of the "speed reverts on re-engage" bug.
-    if (strlen(config.haOverrideSpeedEntity) > 0) pushEntityFloatState(config.haOverrideSpeedEntity, manualOverrideDutyCycle);
+void pushOverrideSwitchToHA() {
     if (strlen(config.haOverrideSwitchEntity) > 0) pushEntityBoolState(config.haOverrideSwitchEntity, manualOverrideActive);
+}
+
+void pushOverrideSpeedToHA() {
+    if (strlen(config.haOverrideSpeedEntity) > 0) pushEntityFloatState(config.haOverrideSpeedEntity, manualOverrideDutyCycle);
+}
+
+void pushDailyRollupToHA(const String &date,
+                          float localMinC, float localMaxC,
+                          float netMinC, float netMaxC,
+                          float blendMinC, float blendMaxC,
+                          long fan1MinRpm, long fan1MaxRpm,
+                          long fan2MinRpm, long fan2MaxRpm) {
+    EthernetClient client;
+    if (!client.connect(config.haHost, config.haPort)) {
+        Serial.println("Daily rollup push to HA failed - couldn't connect.");
+        return;
+    }
+
+    JsonDocument doc;
+    doc["state"] = date;
+    JsonObject attrs = doc["attributes"].to<JsonObject>();
+    attrs["local_min_c"] = String(localMinC, 1);
+    attrs["local_max_c"] = String(localMaxC, 1);
+    attrs["net_min_c"] = String(netMinC, 1);
+    attrs["net_max_c"] = String(netMaxC, 1);
+    attrs["blend_min_c"] = String(blendMinC, 1);
+    attrs["blend_max_c"] = String(blendMaxC, 1);
+    attrs["fan1_min_rpm"] = fan1MinRpm;
+    attrs["fan1_max_rpm"] = fan1MaxRpm;
+    attrs["fan2_min_rpm"] = fan2MinRpm;
+    attrs["fan2_max_rpm"] = fan2MaxRpm;
+
+    String jsonPayload;
+    serializeJson(doc, jsonPayload);
+
+    String route = "POST /api/states/sensor." + String(config.nodeID) + "_daily_summary HTTP/1.1";
+    client.println(route);
+    client.print("Host: "); client.println(config.haHost);
+    client.print("Authorization: "); client.println(config.haToken);
+    client.println("Content-Type: application/json");
+    client.print("Content-Length: "); client.println(jsonPayload.length());
+    client.println("Connection: close\r\n");
+    client.println(jsonPayload);
+
+    while (client.connected()) {
+        String line = client.readStringUntil('\n');
+        if (line == "\r") break;
+    }
+    client.stop();
+    Serial.println("Daily rollup summary pushed to HA.");
 }

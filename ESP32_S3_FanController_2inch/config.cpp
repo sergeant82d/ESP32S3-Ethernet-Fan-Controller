@@ -39,21 +39,31 @@ SystemConfig config = {
 // This wraps begin() with an explicit force-format-and-retry fallback so a
 // corrupted partition recovers on its own (falling back to config defaults)
 // instead of staying broken until someone notices and re-flashes/erases.
+static bool littleFsMounted = false;
+
 bool mountLittleFSWithRecovery() {
-    if (LittleFS.begin(true, "/littlefs", 10, "ffat")) return true;
+    if (LittleFS.begin(true, "/littlefs", 10, "ffat")) {
+        littleFsMounted = true;
+        return true;
+    }
 
     Serial.println("LittleFS mount failed (possible corruption) - reformatting...");
     if (!LittleFS.format()) {
         Serial.println("LittleFS format failed - storage may be faulty.");
+        littleFsMounted = false;
         return false;
     }
     if (LittleFS.begin(false, "/littlefs", 10, "ffat")) {
         Serial.println("LittleFS reformatted and mounted - settings reset to defaults.");
+        littleFsMounted = true;
         return true;
     }
     Serial.println("LittleFS still failed to mount after reformat.");
+    littleFsMounted = false;
     return false;
 }
+
+bool isLittleFsMounted() { return littleFsMounted; }
 
 void saveSettings() {
     File f = LittleFS.open("/settings.cfg", "w");

@@ -45,13 +45,13 @@
 
 // ===== PWM Outputs (25 kHz, use LEDC) =====
 #define PWM1_PIN    2
-#define PWM2_PIN    6
+#define PWM2_PIN    4
 #define PWM_FREQ_HZ 25000
 #define PWM_RESOLUTION_BITS 8   // adjust if finer duty resolution needed
 
 // ===== Input Capture / Interrupt Pins (fan tachometers) =====
-#define TACH1_PIN   4
-#define TACH2_PIN   16
+#define TACH1_PIN 6
+#define TACH2_PIN 7
 
 // ===== Dallas OneWire (DS18B20) =====
 #define ONEWIRE_PIN 8

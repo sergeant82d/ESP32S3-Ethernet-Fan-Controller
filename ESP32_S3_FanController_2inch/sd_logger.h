@@ -35,4 +35,15 @@ void sdLoggerUpdateSnapshot();
 // itself (including SD-absent spillover) is already handled here.
 void sdLogEvent(const String &category, const String &description);
 
+// Current SD card presence, for status display on the LCD/web dashboard.
+// True once mounted successfully; false if never detected or lost partway
+// through (data is spilling to internal flash in that case - see
+// sd_logger.cpp's spillover mechanism).
+bool isSdCardPresent();
+
+// True if the internal-flash spillover buffer (used only while the SD
+// card is absent) is over ~80% of its cap - a warning sign the card
+// should be reinserted soon before further log rows start being dropped.
+bool isSpilloverNearFull();
+
 #endif // SD_LOGGER_H

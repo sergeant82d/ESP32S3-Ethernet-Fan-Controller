@@ -54,4 +54,12 @@ void saveSettings();
 // Call this once in setup() instead of LittleFS.begin() directly.
 bool mountLittleFSWithRecovery();
 
+// True only if LittleFS is confirmed successfully mounted (either the
+// initial attempt or the reformat-recovery attempt succeeded). Other code
+// (notably sd_logger.cpp's SD-absent spillover path) must check this
+// before calling any LittleFS function - calling filesystem operations
+// against a LittleFS that never actually mounted is a known way for
+// ESP32's VFS layer to hang indefinitely rather than fail cleanly.
+bool isLittleFsMounted();
+
 #endif // CONFIG_H
