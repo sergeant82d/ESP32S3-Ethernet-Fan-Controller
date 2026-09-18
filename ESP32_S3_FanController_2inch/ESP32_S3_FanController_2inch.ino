@@ -22,6 +22,8 @@
     web_server.h/.cpp - HTTP config page + AJAX telemetry endpoint
 */
 
+//#include <Arduino.h>
+
 #include "pins.h"
 #include "config.h"
 #include "sensors.h"
