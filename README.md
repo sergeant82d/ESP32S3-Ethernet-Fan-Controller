@@ -1,4 +1,4 @@
-# ESP32S3fanController
+# ESP32S3 Fan Controller
 Ethernet/WiFi/Bluetooth/GLCD/SD card logging/Home Assistant integration/2x 25 KHz PWM/2x input Interrupts/DS18B20 Temperature sensor
 
 
