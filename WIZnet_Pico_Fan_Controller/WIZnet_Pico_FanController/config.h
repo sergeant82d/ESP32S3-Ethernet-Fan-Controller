@@ -34,4 +34,8 @@ void loadSettings();
 void saveSettings();
 bool mountStorage();
 
+void sampleSensors();
+void calculateFanSpeeds();
+void postTelemetryToHomeAssistant();
+
 #endif // CONFIG_H

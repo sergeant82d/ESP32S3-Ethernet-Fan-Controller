@@ -76,29 +76,18 @@ time_t getNtpTime() {
 }
 
 void networkInit() {
-    // Hardware reset pulse for the external W5500 module
     pinMode(W5500_RST, OUTPUT);
-    digitalWrite(W5500_RST, LOW);
-    delay(50);
-    digitalWrite(W5500_RST, HIGH);
-    delay(50);
-
-    SPI.begin(W5500_SCK, W5500_MISO, W5500_MOSI, W5500_CS);
-    Ethernet.init(W5500_CS);
-
-    Serial.println("Initializing external W5500 Ethernet module...");
-    Ethernet.begin(mac, config.ip, config.dns, config.gateway, config.subnet);
-
-    if (Udp.begin(localPortUDP)) {
-        Serial.println("UDP socket opened for NTP.");
-    } else {
-        Serial.println("WARNING: Udp.begin() failed - no free W5500 socket for NTP.");
-    }
-    server.begin();
-
-    Serial.print("Dashboard URL: http://"); Serial.println(Ethernet.localIP());
-    Serial.print("Hardware status: ");       Serial.println((int)Ethernet.hardwareStatus());
+    
+    // Set pins on the core SPI object first
+    SPI.setSCK(W5500_SCK);
+    SPI.setRX(W5500_MISO);
+    SPI.setTX(W5500_MOSI);
+    SPI.setCS(W5500_CS);
+    
+    // Initialize with zero parameters
+    SPI.begin();
 }
+
 
 bool isEthernetConnected() {
     return Ethernet.linkStatus() == LinkON;

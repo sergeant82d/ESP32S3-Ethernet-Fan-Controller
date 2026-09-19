@@ -18,9 +18,16 @@ static const int TOUCH_NATIVE_W = 240;
 static const int TOUCH_NATIVE_H = 320;
 
 void touchInit() {
-    Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL);
-    pinMode(PIN_TP_INT, INPUT); // not used as an interrupt yet - polled instead
+    // 1. Assign the RP2040 pins on the Wire hardware instance
+    Wire.setSDA(PIN_I2C_SDA);
+    Wire.setSCL(PIN_I2C_SCL);
+
+    // 2. Fire up the I2C bus with zero arguments
+    Wire.begin();
+
+    pinMode(PIN_TP_INT, INPUT); 
 }
+
 
 bool getTouchPoint(int &x, int &y) {
     Wire.beginTransmission(CST816_ADDR);

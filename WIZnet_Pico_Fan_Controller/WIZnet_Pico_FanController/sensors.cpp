@@ -1,20 +1,20 @@
 #include "sensors.h"
 #include "pins.h"
 #include "config.h"
-#include <OneWire.h>[cite: 14]
-#include <DallasTemperature.h>[cite: 14]
+#include <OneWire.h>
+#include <DallasTemperature.h>
 #include <hardware/pwm.h>
 #include <hardware/clocks.h>
 
 const int NUM_FANS = 2;
-unsigned long currentRPMs[NUM_FANS] = {0, 0};[cite: 14]
-volatile unsigned long tachCounts[NUM_FANS] = {0, 0};[cite: 14]
+unsigned long currentRPMs[NUM_FANS] = {0, 0};
+volatile unsigned long tachCounts[NUM_FANS] = {0, 0};
 
-float localTempC = 0.0f;[cite: 14]
-float blendedAverageC = 0.0f;[cite: 14]
+float localTempC = 0.0f;
+float blendedAverageC = 0.0f;
 
-static OneWire oneWire(ONEWIRE_PIN);[cite: 14]
-static DallasTemperature dallasSensors(&oneWire);[cite: 14]
+static OneWire oneWire(ONEWIRE_PIN);
+static DallasTemperature dallasSensors(&oneWire);
 
 static void tachISR0() { tachCounts[0]++; }
 static void tachISR1() { tachCounts[1]++; }
@@ -39,32 +39,32 @@ static void writeDuty(uint pin, uint8_t duty255) {
 }
 
 void sensorsInit() {
-    dallasSensors.begin();[cite: 14]
+    dallasSensors.begin();
     
     initPWM(FAN1_PWM_PIN);
     initPWM(FAN2_PWM_PIN);
 
-    pinMode(TACH1_PIN, INPUT_PULLUP);[cite: 14]
-    pinMode(TACH2_PIN, INPUT_PULLUP);[cite: 14]
-    attachInterrupt(digitalPinToInterrupt(TACH1_PIN), tachISR0, FALLING);[cite: 14]
-    attachInterrupt(digitalPinToInterrupt(TACH2_PIN), tachISR1, FALLING);[cite: 14]
+    pinMode(TACH1_PIN, INPUT_PULLUP);
+    pinMode(TACH2_PIN, INPUT_PULLUP);
+    attachInterrupt(digitalPinToInterrupt(TACH1_PIN), tachISR0, FALLING);
+    attachInterrupt(digitalPinToInterrupt(TACH2_PIN), tachISR1, FALLING);
 }
 
 void sampleSensors() {
-    dallasSensors.requestTemperatures();[cite: 14]
-    float raw = dallasSensors.getTempCByIndex(0);[cite: 14]
-    if (raw > -50.0f && raw != 85.0f && raw != -127.0f) {[cite: 14]
-        localTempC = raw;[cite: 14]
-        blendedAverageC = localTempC;[cite: 14]
+    dallasSensors.requestTemperatures();
+    float raw = dallasSensors.getTempCByIndex(0);
+    if (raw > -50.0f && raw != 85.0f && raw != -127.0f) {
+        localTempC = raw;
+        blendedAverageC = localTempC;
     }
 }
 
 void calculateFanSpeeds() {
     int duty = 0;
-    if (blendedAverageC >= config.tMax) duty = 255;[cite: 14]
-    else if (blendedAverageC <= config.tMin) duty = 0;[cite: 14]
+    if (blendedAverageC >= config.tMax) duty = 255;
+    else if (blendedAverageC <= config.tMin) duty = 0;
     else {
-        duty = (int)(51.0f + ((blendedAverageC - config.tMin) / (config.tMax - config.tMin)) * 204.0f);[cite: 14]
+        duty = (int)(51.0f + ((blendedAverageC - config.tMin) / (config.tMax - config.tMin)) * 204.0f);
     }
     writeDuty(FAN1_PWM_PIN, duty);
     writeDuty(FAN2_PWM_PIN, duty);
@@ -72,10 +72,10 @@ void calculateFanSpeeds() {
 
 void calculateRPMs(unsigned long elapsedMs) {
     for (int i = 0; i < NUM_FANS; i++) {
-        noInterrupts();[cite: 14]
-        unsigned long pulses = tachCounts[i];[cite: 14]
-        tachCounts[i] = 0;[cite: 14]
-        interrupts();[cite: 14]
-        currentRPMs[i] = (pulses * 60000UL) / (2 * elapsedMs);[cite: 14]
+        noInterrupts();
+        unsigned long pulses = tachCounts[i];
+        tachCounts[i] = 0;
+        interrupts();
+        currentRPMs[i] = (pulses * 60000UL) / (2 * elapsedMs);
     }
 }
