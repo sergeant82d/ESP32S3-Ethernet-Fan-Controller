@@ -51,8 +51,11 @@ void handleNativeWebTraffic(EthernetClient& client) {
 
         client.println("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n");
         client.println("<h2>Settings Applied! Rebooting board...</h2>");
+
+        client.println("</form></div></body></html>");
         client.flush();
         client.stop();
+
         delay(1000);
         rp2040.reboot();
         return;
