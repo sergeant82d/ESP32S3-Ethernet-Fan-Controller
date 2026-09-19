@@ -31,11 +31,14 @@ void setup() {
     delay(100);
 
     // Configure SPI0 for Ethernet
-    SPI.setSCK(W5500_SCK);
-    SPI.setTX(W5500_MOSI);
-    SPI.setRX(W5500_MISO);
-    SPI.setCS(W5500_CS);
-    Ethernet.init(W5500_CS);
+// Configure SPI0 for Ethernet on W5500-EVB-Pico
+SPI.setSCK(W5500_SCK);
+SPI.setTX(W5500_MOSI);
+SPI.setRX(W5500_MISO);
+SPI.setCS(W5500_CS);
+SPI.begin();
+
+Ethernet.init(W5500_CS);
 
     Serial.println("Acquiring network address...");
     if (config.useDHCP) {
@@ -44,8 +47,18 @@ void setup() {
             Ethernet.begin(mac, IPAddress(192, 168, 1, 50));
         }
     } else {
-        Ethernet.begin(mac, config.ip, config.dns, config.gateway, config.subnet);
+        // Fall back to standard defaults if gateway or subnet are 0.0.0.0
+        IPAddress gw = (config.gateway == IPAddress(0, 0, 0, 0)) ? IPAddress(192, 168, 1, 1) : config.gateway;
+        IPAddress sn = (config.subnet == IPAddress(0, 0, 0, 0)) ? IPAddress(255, 255, 255, 0) : config.subnet;
+        IPAddress dns = (config.dns == IPAddress(0, 0, 0, 0)) ? gw : config.dns;
+
+        Ethernet.begin(mac, config.ip, dns, gw, sn);
     }
+
+    delay(200); // Allow PHY and socket registers to stabilize
+    server.begin();
+    Serial.print("Web server active at: http://");
+    Serial.println(Ethernet.localIP());
 
     server.begin();
     updateDashboardUI();
@@ -80,6 +93,8 @@ void loop() {
     if (millis() - lastHA >= REFRESH_PERIOD_MS) {
         lastHA = millis();
         postTelemetryToHomeAssistant();
-        Serial.print("IP Address: "); Serial.println(Ethernet.localIP());
+        Serial.print("IP Address: "); 
+        Serial.println(Ethernet.localIP());
     }
+
 }

@@ -8,10 +8,11 @@ void postTelemetryToHomeAssistant() {
     if (strlen(config.haHost) == 0 || strlen(config.haToken) == 0) return;
 
     EthernetClient client;
-    if (!client.connect(config.haHost, config.haPort)) {
-        Serial.println("HA connection failed.");
-        return;
-    }
+        if (!client.connect(config.haHost, config.haPort)) {
+            Serial.println("HA connection failed.");
+            client.stop(); // <-- Crucial: releases the hardware socket back to the W5500 pool
+            return;
+        }
 
     JsonDocument doc;
     doc["state"] = String(localTempC, 1);
