@@ -14,7 +14,7 @@ void setup() {
     Serial.begin(115200);
     delay(1000);
 
-//    mountStorage();
+    mountStorage();
     loadSettings();
 
     // 1. Initialize Display first (SPI1)
@@ -80,6 +80,6 @@ void loop() {
     if (millis() - lastHA >= REFRESH_PERIOD_MS) {
         lastHA = millis();
         postTelemetryToHomeAssistant();
-        Serial.print("IP Address: "); Serial.println(config.ip);
+        Serial.print("IP Address: "); Serial.println(Ethernet.localIP());
     }
 }
