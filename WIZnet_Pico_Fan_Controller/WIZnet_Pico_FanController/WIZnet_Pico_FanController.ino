@@ -80,5 +80,6 @@ void loop() {
     if (millis() - lastHA >= REFRESH_PERIOD_MS) {
         lastHA = millis();
         postTelemetryToHomeAssistant();
+        Serial.print("IP Address: "); Serial.println(config.ip);
     }
 }

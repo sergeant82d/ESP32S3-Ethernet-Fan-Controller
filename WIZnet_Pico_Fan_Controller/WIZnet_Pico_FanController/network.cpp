@@ -9,7 +9,7 @@ EthernetServer server(80);
 EthernetUDP Udp;
 
 static const unsigned int localPortUDP = 8888;
-static const char* ntpServerName = "162.159.200.1"; // TEMP: Cloudflare NTP, bypasses DNS for diagnosis - revert to "pool.ntp.org" once resolved
+static const char* ntpServerName = "pool.ntp.org";
 static const int NTP_PACKET_SIZE = 48;
 static byte packetBuffer[NTP_PACKET_SIZE];
 
@@ -76,16 +76,30 @@ time_t getNtpTime() {
 }
 
 void networkInit() {
+    // Reset W5500 hardware
     pinMode(W5500_RST, OUTPUT);
-    
-    // Set pins on the core SPI object first
+    digitalWrite(W5500_RST, LOW);
+    delay(10);
+    digitalWrite(W5500_RST, HIGH);
+    delay(50);
+
+    // Hardware CS pin
+    Ethernet.init(W5500_CS);
+
     SPI.setSCK(W5500_SCK);
     SPI.setRX(W5500_MISO);
     SPI.setTX(W5500_MOSI);
     SPI.setCS(W5500_CS);
-    
-    // Initialize with zero parameters
     SPI.begin();
+
+    if (config.useDHCP) {
+        Ethernet.begin(mac);
+    } else {
+        Ethernet.begin(mac, config.ip, config.dns, config.gateway, config.subnet);
+    }
+
+    server.begin();
+    Udp.begin(localPortUDP);
 }
 
 
