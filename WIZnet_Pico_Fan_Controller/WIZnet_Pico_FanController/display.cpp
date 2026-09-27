@@ -6,8 +6,8 @@
 #include <Adafruit_ST7789.h>
 #include <SPI.h>
 #include <Ethernet.h>
-#include <TimeLib.h>[cite: 4]
-#include <Fonts/FreeSansBold24pt7b.h>[cite: 4]
+#include <TimeLib.h>
+#include <Fonts/FreeSansBold24pt7b.h>
 #include <Fonts/FreeSansBold12pt7b.h>
 
 // Dedicated SPI1 for LCD
@@ -36,7 +36,7 @@ void updateDashboardUI() {
         if (config.is24Hour) {
             snprintf(timeStr, sizeof(timeStr), "%02d:%02d:%02d", hour(), minute(), second());
         } else {
-            snprintf(timeStr, sizeof(timeStr), "%d:%02d %s", hourFormat12(), minute(), isAM() ? "AM" : "PM");[cite: 4]
+            snprintf(timeStr, sizeof(timeStr), "%d:%02d %s", hourFormat12(), minute(), isAM() ? "AM" : "PM");
         }
     } else {
         strcpy(timeStr, "Syncing...");
@@ -46,33 +46,33 @@ void updateDashboardUI() {
 
     // 2. Large Main Temperature (Hero Number)
     screenMain.setFont(&FreeSansBold24pt7b);
-    float dispAvg = config.isFahrenheit ? ((blendedAverageC * 1.8f) + 32.0f) : blendedAverageC;[cite: 4, 21]
-    uint16_t tempColor = (blendedAverageC > (config.tMax - 5.0f)) ? ST77XX_RED : ST77XX_GREEN;[cite: 4]
+    float dispAvg = config.isFahrenheit ? ((blendedAverageC * 1.8f) + 32.0f) : blendedAverageC;
+    uint16_t tempColor = (blendedAverageC > (config.tMax - 5.0f)) ? ST77XX_RED : ST77XX_GREEN;
     screenMain.setTextColor(tempColor);
     
     char avgBuf[8];
-    snprintf(avgBuf, sizeof(avgBuf), "%d", (int)round(dispAvg));[cite: 21, 22]
+    snprintf(avgBuf, sizeof(avgBuf), "%d", (int)round(dispAvg));
     screenMain.setCursor(95, 115);
     screenMain.print(avgBuf);
 
     screenMain.setFont(&FreeSansBold12pt7b);
     screenMain.setCursor(170, 95);
-    screenMain.print(config.isFahrenheit ? "oF" : "oC");[cite: 21]
+    screenMain.print(config.isFahrenheit ? "oF" : "oC");
 
     // 3. Telemetry Readouts (Labeled Simple Numbers)
     screenMain.setFont(NULL); // System font
     screenMain.setTextSize(2);
     screenMain.setTextColor(ST77XX_CYAN);
     screenMain.setCursor(15, 160);
-    screenMain.printf("F1: %lu RPM", currentRPMs[0]);[cite: 21]
+    screenMain.printf("F1: %lu RPM", currentRPMs[0]);
 
     screenMain.setCursor(150, 160);
-    screenMain.printf("F2: %lu RPM", currentRPMs[1]);[cite: 21]
+    screenMain.printf("F2: %lu RPM", currentRPMs[1]);
 
     screenMain.setTextColor(ST77XX_ORANGE);
     screenMain.setCursor(15, 185);
-    float dispLocal = config.isFahrenheit ? ((localTempC * 1.8f) + 32.0f) : localTempC;[cite: 4, 21]
-    screenMain.printf("Probe Temp: %d %c", (int)round(dispLocal), config.isFahrenheit ? 'F' : 'C');[cite: 21]
+    float dispLocal = config.isFahrenheit ? ((localTempC * 1.8f) + 32.0f) : localTempC;
+    screenMain.printf("Probe Temp: %d %c", (int)round(dispLocal), config.isFahrenheit ? 'F' : 'C');
 
     // 4. Footer (IP Address and Date)
     screenMain.setTextSize(1);
@@ -85,6 +85,6 @@ void updateDashboardUI() {
     if (timeStatus() != timeNotSet) {
         screenMain.printf("%04d-%02d-%02d", year(), month(), day());
     } else {
-        screenMain.print("----/--/--");[cite: 4]
+        screenMain.print("----/--/--");
     }
 }
