@@ -1,0 +1,15 @@
+# Build output
+build/
+.pio/
+*.bin
+*.elf
+*.map
+
+# Editor / IDE clutter (Visual Studio, Visual Micro, Theia)
+.vs/
+__vm/
+.theia/
+*.vcxproj.user
+
+# Secrets: keep tokens and Wi-Fi passwords here, never in the sketch
+secrets.h
