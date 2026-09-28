@@ -3,7 +3,6 @@ Arduino v2 Project - Built on the Waveshare ESP32-S3-Touch-LCD-2 (240x320 landsc
 
 - Ethernet (external W5500 module)
 - WiFi
-- Bluetooth
 - GLCD
 - SD card logging
 - 2x 25 KHz PWM
