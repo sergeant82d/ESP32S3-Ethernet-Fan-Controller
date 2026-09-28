@@ -8,7 +8,7 @@ Arduino v2 Project - Built on the Waveshare ESP32-S3-Touch-LCD-2 (240x320 landsc
 - 2x 25 KHz PWM
 - 2x input Interrupts
 - DS18B20 Temperature sensor
-- Home Assistant integration
+- Home Assistant integration using MQTT
 
 
 This project created by Claude AI, as directed by this GitHub account holder. 
