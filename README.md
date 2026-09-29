@@ -1,4 +1,7 @@
 # ESP32S3 Fan Controller
+
+# OUTDATED - USE ETH_Touch_PWM in VS Code instead. 
+
 Arduino v2 Project - Built on the Waveshare ESP32-S3-Touch-LCD-2 (240x320 landscape, ST7789T3 + CST816D) Development Board. Main systems used:
 
 - Ethernet (external W5500 module)
